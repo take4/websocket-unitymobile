@@ -157,7 +157,7 @@ namespace WebSocketSharp.Net {
 					handle.Set ();
 
 				if (cb != null)
-					ThreadPool.UnsafeQueueUserWorkItem (InvokeCB, this);
+					ThreadPool.QueueUserWorkItem (InvokeCB, this);
 			}
 		}
 
@@ -201,7 +201,7 @@ namespace WebSocketSharp.Net {
 						handle.Set ();
 
 					if (cb != null)
-						ThreadPool.UnsafeQueueUserWorkItem (InvokeCB, this);
+						ThreadPool.QueueUserWorkItem (InvokeCB, this);
 				}
 			}
 		}
