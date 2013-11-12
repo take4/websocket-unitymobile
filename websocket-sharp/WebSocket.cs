@@ -1105,42 +1105,18 @@ namespace WebSocketSharp
 
     private void send (Opcode opcode, byte [] data, Action<bool> completed)
     {
-      Func<Opcode, byte [], bool> sender = send;
-      AsyncCallback callback = ar =>
-      {
-        try {
-          var sent = sender.EndInvoke (ar);
-          if (completed != null)
-            completed (sent);
-        }
-        catch (Exception ex)
-        {
-          _logger.Fatal (ex.ToString ());
-          error ("An exception has occurred.");
-        }
-      };
-
-      sender.BeginInvoke (opcode, data, callback, null);
+      bool sent = send (opcode, data);
+      if (completed != null) {
+        completed(sent);
+      }
     }
 
     private void send (Opcode opcode, Stream stream, Action<bool> completed)
     {
-      Func<Opcode, Stream, bool> sender = send;
-      AsyncCallback callback = ar =>
-      {
-        try {
-          var sent = sender.EndInvoke (ar);
-          if (completed != null)
-            completed (sent);
-        }
-        catch (Exception ex)
-        {
-          _logger.Fatal (ex.ToString ());
-          error ("An exception has occurred.");
-        }
-      };
-
-      sender.BeginInvoke (opcode, stream, callback, null);
+      bool sent = send (opcode, stream);
+      if (completed != null) {
+          completed(sent);
+      }
     }
 
     private bool sendFragmented (Opcode opcode, Stream stream, Mask mask, bool compressed)
