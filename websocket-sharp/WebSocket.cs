@@ -481,22 +481,22 @@ namespace WebSocketSharp
     /// <summary>
     /// Occurs when the WebSocket connection has been closed.
     /// </summary>
-    public event EventHandler<CloseEventArgs> OnClose;
+    public EventHandler<CloseEventArgs> OnClose;
 
     /// <summary>
     /// Occurs when the <see cref="WebSocket"/> gets an error.
     /// </summary>
-    public event EventHandler<ErrorEventArgs> OnError;
+    public EventHandler<ErrorEventArgs> OnError;
 
     /// <summary>
     /// Occurs when the <see cref="WebSocket"/> receives a data frame.
     /// </summary>
-    public event EventHandler<MessageEventArgs> OnMessage;
+    public EventHandler<MessageEventArgs> OnMessage;
 
     /// <summary>
     /// Occurs when the WebSocket connection has been established.
     /// </summary>
-    public event EventHandler OnOpen;
+    public EventHandler OnOpen;
 
     #endregion
 
