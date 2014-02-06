@@ -222,26 +222,6 @@ namespace WebSocketSharp
                  : null;
     }
 
-    internal static string CheckIfStart (this ServerState state)
-    {
-      return state == ServerState.READY
-             ? "The server hasn't started yet."
-             : state == ServerState.SHUTDOWN
-               ? "The server is shutting down."
-               : state == ServerState.STOP
-                 ? "The server has already stopped."
-                 : null;
-    }
-
-    internal static string CheckIfStartable (this ServerState state)
-    {
-      return state == ServerState.START
-             ? "The server has already started."
-             : state == ServerState.SHUTDOWN
-               ? "The server is shutting down."
-               : null;
-    }
-
     internal static string CheckIfValidCloseStatusCode (this ushort code)
     {
       return !code.IsCloseStatusCode ()
