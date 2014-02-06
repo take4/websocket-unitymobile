@@ -4,8 +4,8 @@
  *
  * The MIT License
  *
- * Copyright (c) 2012-2013 sta.blockhead
- * 
+ * Copyright (c) 2012-2014 sta.blockhead
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
@@ -15,7 +15,7 @@
  *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -35,6 +35,14 @@ namespace WebSocketSharp
 {
   internal abstract class HandshakeBase
   {
+    #region Private Fields
+
+    private byte []             _entity;
+    private NameValueCollection _headers;
+    private Version             _version;
+
+    #endregion
+
     #region Protected Const Fields
 
     protected const string CrLf = "\r\n";
@@ -45,45 +53,78 @@ namespace WebSocketSharp
 
     protected HandshakeBase ()
     {
-      ProtocolVersion = HttpVersion.Version11;
-      Headers = new NameValueCollection ();
+    }
+
+    #endregion
+
+    #region Internal Properties
+
+    internal byte [] EntityBodyData {
+      get {
+        return _entity;
+      }
+
+      set {
+        _entity = value;
+      }
     }
 
     #endregion
 
     #region Public Properties
 
+    public string EntityBody {
+      get {
+        return _entity != null && _entity.LongLength > 0
+               ? getEncoding (_headers ["Content-Type"]).GetString (_entity)
+               : String.Empty;
+      }
+    }
+
     public NameValueCollection Headers {
-      get; protected set;
+      get {
+        return _headers ?? (_headers = new NameValueCollection ());
+      }
+
+      protected set {
+        _headers = value;
+      }
     }
 
     public Version ProtocolVersion {
-      get; protected set;
+      get {
+        return _version ?? (_version = HttpVersion.Version11);
+      }
+
+      protected set {
+        _version = value;
+      }
+    }
+
+    #endregion
+
+    #region Private Methods
+
+    private static Encoding getEncoding (string contentType)
+    {
+      if (contentType == null || contentType.Length == 0)
+        return Encoding.UTF8;
+
+      var i = contentType.IndexOf ("charset=", StringComparison.Ordinal);
+      if (i == -1)
+        return Encoding.UTF8;
+
+      var charset = contentType.Substring (i + 8);
+      i = charset.IndexOf (';');
+      if (i != -1)
+        charset = charset.Substring (0, i);
+
+      return Encoding.GetEncoding (charset);
     }
 
     #endregion
 
     #region Public Methods
-
-    public void AddHeader (string name, string value)
-    {
-      Headers.Add (name, value);
-    }
-
-    public bool ContainsHeader (string name)
-    {
-      return Headers.Contains (name);
-    }
-
-    public bool ContainsHeader (string name, string value)
-    {
-      return Headers.Contains (name, value);
-    }
-
-    public string [] GetHeaderValues (string name)
-    {
-      return Headers.GetValues (name);
-    }
 
     public byte [] ToByteArray ()
     {

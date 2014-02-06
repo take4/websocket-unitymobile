@@ -4,8 +4,8 @@
  *
  * The MIT License
  *
- * Copyright (c) 2010-2013 sta.blockhead
- * 
+ * Copyright (c) 2010-2014 sta.blockhead
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
@@ -15,7 +15,7 @@
  *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -42,8 +42,7 @@ namespace WebSocketSharp
   {
     #region Private Const Fields
 
-    private const int _handshakeLimitLen = 8192;
-    private const int _handshakeTimeout = 90000;
+    private const int _handshakeHeadersLimitLen = 8192;
 
     #endregion
 
@@ -98,18 +97,59 @@ namespace WebSocketSharp
 
     #endregion
 
+    #region Private Methods
+
+    private static byte [] readHandshakeEntityBody (Stream stream, string length)
+    {
+      var len = Int64.Parse (length);
+      return len > 1024
+             ? stream.ReadBytes (len, 1024)
+             : stream.ReadBytes ((int) len);
+    }
+
+    private static string [] readHandshakeHeaders (Stream stream)
+    {
+      var buffer = new List<byte> ();
+      var count = 0;
+      Action<int> add = i => {
+        buffer.Add ((byte) i);
+        count++;
+      };
+
+      var read = false;
+      while (count < _handshakeHeadersLimitLen) {
+        if (stream.ReadByte ().EqualsWith ('\r', add) &&
+            stream.ReadByte ().EqualsWith ('\n', add) &&
+            stream.ReadByte ().EqualsWith ('\r', add) &&
+            stream.ReadByte ().EqualsWith ('\n', add)) {
+          read = true;
+          break;
+        }
+      }
+
+      if (!read)
+        throw new WebSocketException (
+          "The header part of a handshake is greater than the limit length.");
+
+      var crlf = "\r\n";
+      return Encoding.UTF8.GetString (buffer.ToArray ())
+             .Replace (crlf + " ", " ")
+             .Replace (crlf + "\t", " ")
+             .Split (new string [] { crlf }, StringSplitOptions.RemoveEmptyEntries);
+    }
+
+    #endregion
+
     #region Internal Methods
 
     internal static WsStream CreateClientStream (
       TcpClient client,
       bool secure,
       string host,
-      System.Net.Security.RemoteCertificateValidationCallback validationCallback
-    )
+      System.Net.Security.RemoteCertificateValidationCallback validationCallback)
     {
       var netStream = client.GetStream ();
-      if (secure)
-      {
+      if (secure) {
         if (validationCallback == null)
           validationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
 
@@ -122,11 +162,11 @@ namespace WebSocketSharp
       return new WsStream (netStream);
     }
 
-    internal static WsStream CreateServerStream (TcpClient client, bool secure, X509Certificate cert)
+    internal static WsStream CreateServerStream (
+      TcpClient client, X509Certificate cert, bool secure)
     {
       var netStream = client.GetStream ();
-      if (secure)
-      {
+      if (secure) {
         var sslStream = new SslStream (netStream, false);
         sslStream.AuthenticateAsServer (cert);
 
@@ -142,10 +182,52 @@ namespace WebSocketSharp
       return new WsStream (conn.Stream, conn.IsSecure);
     }
 
+    internal T ReadHandshake<T> (
+      Func<string [], T> parser, int millisecondsTimeout)
+      where T : HandshakeBase
+    {
+      var timeout = false;
+      var timer = new Timer (
+        state => {
+          timeout = true;
+          _innerStream.Close ();
+        },
+        null,
+        millisecondsTimeout,
+        -1);
+
+      T handshake = null;
+      Exception exception = null;
+      try {
+        handshake = parser (readHandshakeHeaders (_innerStream));
+        var contentLen = handshake.Headers ["Content-Length"];
+        if (contentLen != null && contentLen.Length > 0)
+          handshake.EntityBodyData = readHandshakeEntityBody (
+            _innerStream, contentLen);
+      }
+      catch (Exception ex) {
+        exception = ex;
+      }
+      finally {
+        timer.Change (-1, -1);
+        timer.Dispose ();
+      }
+
+      var reason = timeout
+                 ? "A timeout has occurred while receiving a handshake."
+                 : exception != null
+                   ? "An exception has occurred while receiving a handshake."
+                   : null;
+
+      if (reason != null)
+        throw new WebSocketException (reason, exception);
+
+      return handshake;
+    }
+
     internal bool Write (byte [] data)
     {
-      lock (_forWrite)
-      {
+      lock (_forWrite) {
         try {
           _innerStream.Write (data, 0, data.Length);
           return true;
@@ -175,68 +257,20 @@ namespace WebSocketSharp
       return WsFrame.Parse (_innerStream, true);
     }
 
-    public void ReadFrameAsync (Action<WsFrame> completed, Action<Exception> error)
+    public void ReadFrameAsync (
+      Action<WsFrame> completed, Action<Exception> error)
     {
       WsFrame.ParseAsync (_innerStream, true, completed, error);
     }
 
-    public string [] ReadHandshake ()
+    public HandshakeRequest ReadHandshakeRequest ()
     {
-      var read = false;
-      var exception = false;
+      return ReadHandshake<HandshakeRequest> (HandshakeRequest.Parse, 90000);
+    }
 
-      var buffer = new List<byte> ();
-      Action<int> add = i => buffer.Add ((byte) i);
-
-      var timeout = false;
-      var timer = new Timer (
-        state =>
-        {
-          timeout = true;
-          _innerStream.Close ();
-        },
-        null,
-        _handshakeTimeout,
-        -1);
-
-      try {
-        while (buffer.Count < _handshakeLimitLen)
-        {
-          if (_innerStream.ReadByte ().EqualsWith ('\r', add) &&
-              _innerStream.ReadByte ().EqualsWith ('\n', add) &&
-              _innerStream.ReadByte ().EqualsWith ('\r', add) &&
-              _innerStream.ReadByte ().EqualsWith ('\n', add))
-          {
-            read = true;
-            break;
-          }
-        }
-      }
-      catch {
-        exception = true;
-      }
-      finally {
-        timer.Change (-1, -1);
-        timer.Dispose ();
-      }
-
-      var reason = timeout
-                 ? "A timeout has occurred while receiving a handshake."
-                 : exception
-                   ? "An exception has occurred while receiving a handshake."
-                   : !read
-                     ? "A handshake length is greater than the limit length."
-                     : null;
-
-      if (reason != null)
-        throw new WebSocketException (reason);
-
-      return Encoding.UTF8.GetString (buffer.ToArray ())
-             .Replace ("\r\n", "\n")
-             .Replace ("\n ", " ")
-             .Replace ("\n\t", " ")
-             .TrimEnd ('\n')
-             .Split ('\n');
+    public HandshakeResponse ReadHandshakeResponse ()
+    {
+      return ReadHandshake<HandshakeResponse> (HandshakeResponse.Parse, 90000);
     }
 
     public bool WriteFrame (WsFrame frame)

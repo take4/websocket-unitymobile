@@ -86,7 +86,6 @@
     <Compile Include="WebSocketException.cs" />
     <Compile Include="AuthenticationChallenge.cs" />
     <Compile Include="AuthenticationResponse.cs" />
-    <Compile Include="WsCredential.cs" />
     <Compile Include="LogData.cs" />
     <Compile Include="LogLevel.cs" />
     <Compile Include="Logger.cs" />
@@ -94,6 +93,9 @@
     <Compile Include="HandshakeRequest.cs" />
     <Compile Include="HandshakeResponse.cs" />
     <Compile Include="WebSocketState.cs" />
+    <Compile Include="Net\HttpBasicIdentity.cs" />
+    <Compile Include="Net\HttpDigestIdentity.cs" />
+    <Compile Include="Net\NetworkCredential.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
