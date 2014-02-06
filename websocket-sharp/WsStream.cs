@@ -176,12 +176,6 @@ namespace WebSocketSharp
       return new WsStream (netStream);
     }
 
-    internal static WsStream CreateServerStream (HttpListenerContext context)
-    {
-      var conn = context.Connection;
-      return new WsStream (conn.Stream, conn.IsSecure);
-    }
-
     internal T ReadHandshake<T> (
       Func<string [], T> parser, int millisecondsTimeout)
       where T : HandshakeBase

@@ -286,20 +286,6 @@ namespace WebSocketSharp
              : null;
     }
 
-    internal static void Close (
-      this HttpListenerResponse response, HttpStatusCode code)
-    {
-      response.StatusCode = (int) code;
-      response.OutputStream.Close ();
-    }
-
-    internal static void CloseWithAuthChallenge (
-      this HttpListenerResponse response, string challenge)
-    {
-      response.Headers.SetInternal ("WWW-Authenticate", challenge, true);
-      response.Close (HttpStatusCode.Unauthorized);
-    }
-
     internal static byte [] Compress (
       this byte [] value, CompressionMethod method)
     {
@@ -505,12 +491,6 @@ namespace WebSocketSharp
       return i >= 0 && i < nameAndValue.Length - 1
              ? nameAndValue.Substring (i + 1).Trim ()
              : null;
-    }
-
-    internal static TcpListenerWebSocketContext GetWebSocketContext (
-      this TcpClient client, X509Certificate cert, bool secure, Logger logger)
-    {
-      return new TcpListenerWebSocketContext (client, cert, secure, logger);
     }
 
     internal static bool IsCompressionExtension (this string value)
@@ -1366,50 +1346,6 @@ namespace WebSocketSharp
     }
 
     /// <summary>
-    /// Determines whether the specified <see cref="HttpListenerRequest"/> is an
-    /// HTTP Upgrade request to switch to the specified <paramref name="protocol"/>.
-    /// </summary>
-    /// <returns>
-    /// <c>true</c> if <paramref name="request"/> is an HTTP Upgrade request to
-    /// switch to <paramref name="protocol"/>; otherwise, <c>false</c>.
-    /// </returns>
-    /// <param name="request">
-    /// A <see cref="HttpListenerRequest"/> that represents the HTTP request.
-    /// </param>
-    /// <param name="protocol">
-    /// A <see cref="string"/> that represents the protocol name.
-    /// </param>
-    /// <exception cref="ArgumentNullException">
-    ///   <para>
-    ///   <paramref name="request"/> is <see langword="null"/>.
-    ///   </para>
-    ///   <para>
-    ///   -or-
-    ///   </para>
-    ///   <para>
-    ///   <paramref name="protocol"/> is <see langword="null"/>.
-    ///   </para>
-    /// </exception>
-    /// <exception cref="ArgumentException">
-    /// <paramref name="protocol"/> is empty.
-    /// </exception>
-    public static bool IsUpgradeTo (
-      this HttpListenerRequest request, string protocol)
-    {
-      if (request == null)
-        throw new ArgumentNullException ("request");
-
-      if (protocol == null)
-        throw new ArgumentNullException ("protocol");
-
-      if (protocol.Length == 0)
-        throw new ArgumentException ("Must not be empty.", "protocol");
-
-      return request.Headers.Contains ("Upgrade", protocol) &&
-             request.Headers.Contains ("Connection", "Upgrade");
-    }
-
-    /// <summary>
     /// Determines whether the specified <see cref="string"/> is a URI string.
     /// </summary>
     /// <returns>
@@ -1843,35 +1779,6 @@ namespace WebSocketSharp
       return value == null || value.Length == 0
              ? value
              : HttpUtility.UrlEncode (value);
-    }
-
-    /// <summary>
-    /// Writes the specified <paramref name="content"/> data using the specified
-    /// <see cref="HttpListenerResponse"/>.
-    /// </summary>
-    /// <param name="response">
-    /// A <see cref="HttpListenerResponse"/> that represents the HTTP response
-    /// used to write the content data.
-    /// </param>
-    /// <param name="content">
-    /// An array of <see cref="byte"/> that contains the content data to write.
-    /// </param>
-    /// <exception cref="ArgumentNullException">
-    /// <paramref name="response"/> is <see langword="null"/>.
-    /// </exception>
-    public static void WriteContent (
-      this HttpListenerResponse response, byte [] content)
-    {
-      if (response == null)
-        throw new ArgumentNullException ("response");
-
-      if (content == null || content.Length == 0)
-        return;
-
-      var output = response.OutputStream;
-      response.ContentLength64 = content.Length;
-      output.Write (content, 0, content.Length);
-      output.Close ();
     }
 
     #endregion

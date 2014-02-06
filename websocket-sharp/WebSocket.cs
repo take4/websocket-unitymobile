@@ -104,38 +104,6 @@ namespace WebSocketSharp
 
     #endregion
 
-    #region Internal Constructors
-
-    // As server
-    internal WebSocket (HttpListenerWebSocketContext context, Logger logger)
-    {
-      _context = context;
-      _logger = logger;
-
-      _closeContext = context.Close;
-      _secure = context.IsSecureConnection;
-      _stream = context.Stream;
-      _uri = context.Path.ToUri ();
-
-      init ();
-    }
-
-    // As server
-    internal WebSocket (TcpListenerWebSocketContext context, Logger logger)
-    {
-      _context = context;
-      _logger = logger;
-
-      _closeContext = context.Close;
-      _secure = context.IsSecureConnection;
-      _stream = context.Stream;
-      _uri = context.Path.ToUri ();
-
-      init ();
-    }
-
-    #endregion
-
     #region Public Constructors
 
     /// <summary>
