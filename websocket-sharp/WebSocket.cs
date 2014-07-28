@@ -2098,6 +2098,10 @@ namespace WebSocketSharp
       }
     }
 
+    public void addCookie (Cookie cookie) {
+      _cookies.Add (cookie);
+    }
+
     /// <summary>
     /// Sets a pair of the <paramref name="username"/> and
     /// <paramref name="password"/> for HTTP authentication (Basic/Digest).
