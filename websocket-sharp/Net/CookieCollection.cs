@@ -95,11 +95,15 @@ namespace WebSocketSharp.Net {
 
 		internal IEnumerable<Cookie> Sorted {
 			get {
+                /*
 				return from cookie in list
 				       orderby cookie.Version,
 				               cookie.Name,
 				               cookie.Path.Length descending
 				       select cookie;
+                */
+    
+                return list;
 			}
 		}
 
