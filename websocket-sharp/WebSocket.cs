@@ -706,12 +706,12 @@ namespace WebSocketSharp
         ? closeHandshake (
             send ? WsFrame.CreateCloseFrame (Mask.MASK, payload).ToByteArray ()
                  : null,
-            wait ? 5000 : 0,
+            wait ? 500 : 0,
             closeClientResources)
         : closeHandshake (
             send ? WsFrame.CreateCloseFrame (Mask.UNMASK, payload).ToByteArray ()
                  : null,
-            wait ? 1000 : 0,
+            wait ? 100 : 0,
             closeServerResources);
 
       _logger.Trace ("End closing handshake.");
